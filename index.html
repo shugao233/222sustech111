@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AA酱的聊天小屋</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+        body {
+            background: #f0e6ff;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        /* 动画角色容器 */
+        .character-container {
+            width: 200px;
+            height: 300px;
+            margin: 0 auto 20px;
+            position: relative;
+            max-width: 100%;
+            height: auto;
+            aspect-ratio: 2/3; /* 固定宽高比 */
+        }
+        /* 角色主体（傲娇小女孩增强版） */
+        .character {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transition: all 0.5s ease;
+        }
+        /* 脸部 */
+        .face {
+            width: 120px;
+            height: 150px;
+            background: #ffd6ba;
+            border-radius: 55% 55% 50% 50%; /* 更自然的脸部轮廓 */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* 绝对居中 */
+            margin-top: -25px; /* 微调垂直位置 */
+            transition: background 0.8s ease; /* 脸红渐变 */
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); /* 增加脸部立体感 */
+        }
+        /* 腮红（新增） */
+        .blush {
+            width: 25px;
+            height: 15px;
+            background: #ffc2d1;
+            border-radius: 50%;
+            position: absolute;
+            top: 55%;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            transform-origin: center center;
+        }
+        .blush.left { left: 15%; }
+        .blush.right { right: 15%; }
+        /* 眼睛 */
+        .eye {
+            width: 20px;
+            height: 20px;
+            background: #333;
+            border-radius: 50%;
+            position: absolute;
+            top: 40%; /* 垂直百分比定位 */
+            transform: translateY(-50%);
+            transition: all 0.3s ease;
+            transform-origin: center center; /* 变换基于中心点 */
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.2); /* 增加眼睛层次感 */
+        }
+        .eye.left { left: 25%; }
+        .eye.right { right: 25%; }
+        /* 眼皮（用于眨眼动画） */
+        .eyelid {
+            width: 20px;
+            height: 20px;
+            background: #ffd6ba;
+            border-radius: 50%;
+            position: absolute;
+            top: 40%;
+            transform: translateY(-50%) translateY(-20px); /* 先居中再偏移 */
+            z-index: 2;
+            transition: transform 0.2s ease;
+            transform-origin: center center;
+        }
+        .eyelid.left { left: 25%; }
+        .eyelid.right { right: 25%; }
+        /* 嘴巴 */
+        .mouth {
+            width: 40px;
+            height: 20px;
+            border-radius: 0 0 20px 20px;
+            background: #e63946;
+            position: absolute;
+            top: 70%; /* 垂直百分比 */
+            left: 50%;
+            transform: translateX(-50%); /* 水平居中 */
+            transition: all 0.3s ease;
+            transform-origin: center center;
+            overflow: hidden; /* 避免变形溢出 */
+        }
+        /* 头发 */
+        .hair {
+            width: 140px;
+            height: 80px;
+            background: #333;
+            border-radius: 60% 60% 0 0;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        /* 眼泪（新增） */
+        .tear {
+            width: 8px;
+            height: 15px;
+            background: #93c5fd;
+            border-radius: 50%;
+            position: absolute;
+            top: 45%;
+            opacity: 0;
+            z-index: 1;
+            animation: tear-fall 1.2s infinite ease-in-out;
+            transform-origin: center center;
+        }
+        .tear.left { left: 28%; animation-delay: 0.2s; }
+        .tear.right { right: 28%; animation-delay: 0.5s; }
+        @keyframes tear-fall {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(30px); opacity: 0; }
+        }
+
+        /* ========== 细化后的动作样式 ========== */
+        /* 闲置（基础） */
+        .character.idle .eye { transform: translateY(-50%) scale(1); }
+        .character.idle .mouth { border-radius: 0 0 20px 20px; height: 20px; transform: translateX(-50%) scale(1); }
+        .character.idle .eyelid { animation: blink 4s infinite; }
+        /* 害羞（增强：脸红+腮红+眨眼频繁） */
+        .character.shy .face { background: #ffb7c5; }
+        .character.shy .blush { opacity: 1; }
+        .character.shy .eye { transform: translateY(-50%) scale(0.8) translateY(5px); }
+        .character.shy .mouth { border-radius: 20px; height: 10px; top: 75%; transform: translateX(-50%); }
+        .character.shy .eyelid { animation: blink 2s infinite; }
+        /* 生气（增强：红眼睛+皱眉+嘴巴上翘） */
+        .character.angry .eye { transform: translateY(-50%) rotate(10deg); background: #e63946; }
+        .character.angry .mouth { border-radius: 20px 20px 0 0; height: 10px; top: 65%; transform: translateX(-50%); }
+        .character.angry .eyelid { animation: blink 5s infinite; }
+        /* 思考（增强：眯眼+抿嘴+慢眨眼） */
+        .character.think .eye { transform: translateY(-50%) scale(0.9) rotate(-5deg); }
+        .character.think .mouth { border-radius: 50%; height: 5px; top: 72%; transform: translateX(-50%); }
+        .character.think .eyelid { animation: blink 6s infinite; }
+        /* 开心/微笑（增强：大眼睛+大嘴巴+快眨眼） */
+        .character.happy .eye { transform: translateY(-50%) scale(1.2); }
+        .character.happy .mouth { border-radius: 0 0 40px 40px; height: 30px; width: 50px; top: 70%; left: 50%; transform: translateX(-50%); }
+        .character.happy .eyelid { animation: blink 1.5s infinite; }
+        /* 哭（增强：眼泪+委屈脸+慢眨眼） */
+        .character.cry .face { background: #d6e4ff; }
+        .character.cry .tear { opacity: 1; }
+        .character.cry .eye { transform: translateY(-50%) scale(0.9) translateY(3px); }
+        .character.cry .mouth { border-radius: 10px; height: 8px; top: 75%; width: 30px; left: 50%; transform: translateX(-50%); }
+        .character.cry .eyelid { animation: blink 7s infinite; }
+        /* 惊讶（新增：圆眼睛+大嘴巴） */
+        .character.surprised .eye { transform: translateY(-50%) scale(1.5); background: #222; }
+        .character.surprised .mouth { border-radius: 50%; height: 25px; top: 70%; width: 25px; left: 50%; transform: translateX(-50%); }
+        .character.surprised .eyelid { animation: blink 3s infinite; }
+        /* 累（新增：半闭眼+下垂嘴） */
+        .character.tired .eye { transform: translateY(-50%) translateY(5px); height: 8px; border-radius: 50% 50% 0 0; }
+        .character.tired .mouth { border-radius: 20px; height: 5px; top: 75%; transform: translateX(-50%); }
+        .character.tired .eyelid { animation: blink 8s infinite; }
+
+        /* 眨眼动画（核心细化） */
+        @keyframes blink {
+            0% { transform: translateY(-50%) translateY(-20px); }
+            90% { transform: translateY(-50%) translateY(-20px); }
+            95% { transform: translateY(-50%) translateY(0); }
+            100% { transform: translateY(-50%) translateY(-20px); }
+        }
+
+        /* 聊天区域 */
+        .chat-box {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+        .message {
+            margin: 8px 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            max-width: 80%;
+            clear: both;
+        }
+        .user-message {
+            background: #6366f1;
+            color: white;
+            float: right;
+        }
+        .ai-message {
+            background: #e5e7eb;
+            color: #333;
+            float: left;
+        }
+        /* 生图结果区域 */
+        .image-result {
+            margin: 10px 0;
+            text-align: center;
+            display: none;
+        }
+        .gen-image {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 8px;
+            margin: 10px auto;
+            border: 1px solid #eee;
+        }
+        /* 代码复制区域 */
+        .code-copy-area {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            display: none;
+        }
+        .code-content {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            background: #fff;
+            font-size: 14px;
+            resize: none;
+            height: 100px;
+            margin-bottom: 8px;
+        }
+        .copy-btn {
+            padding: 6px 12px;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .copy-btn:hover {
+            background: #7c3aed;
+        }
+        .copy-tip {
+            color: #666;
+            font-size: 12px;
+            margin-left: 8px;
+            display: none;
+        }
+        /* 输入区域 */
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        #question-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        #send-btn {
+            padding: 10px 20px;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #send-btn:hover {
+            background: #7c3aed;
+        }
+        /* 加载动画 */
+        .loading {
+            text-align: center;
+            color: #8b5cf6;
+            margin: 10px 0;
+            display: none;
+        }
+        .typing {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #8b5cf6;
+            margin: 0 2px;
+            animation: typing 1s infinite alternate;
+        }
+        .typing:nth-child(2) { animation-delay: 0.2s; }
+        .typing:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            from { transform: scale(0.8); opacity: 0.5; }
+            to { transform: scale(1.2); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 角色图片区域（实时显示AI生成的角色图片） -->
+        <div class="character-container">
+            <img id="character-image" src="" alt="AA酱" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+            <!-- 加载中的占位提示 -->
+            <div id="character-loading" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #8b5cf6; font-size: 14px;">
+                加载角色中...
+            </div>
+        </div>
+
+        <!-- 聊天记录 -->
+        <div class="chat-box" id="chat-box"></div>
+
+        <!-- 生图结果 -->
+        <div class="image-result" id="image-result">
+            <p>AA酱生成的图片👇</p>
+            <img src="" alt="生成的图片" class="gen-image" id="gen-image">
+            <!-- 代码复制区域 -->
+            <div class="code-copy-area" id="code-copy-area">
+                <textarea class="code-content" id="code-content" readonly>生成的图片代码会显示在这里</textarea>
+                <button class="copy-btn" id="copy-btn">复制代码</button>
+                <span class="copy-tip" id="copy-tip">复制成功！</span>
+            </div>
+        </div>
+
+        <!-- 加载提示 -->
+        <div class="loading" id="loading">
+            AA酱正在思考中...
+            <span class="typing"></span>
+            <span class="typing"></span>
+            <span class="typing"></span>
+        </div>
+
+        <!-- 输入区域 -->
+        <div class="input-area">
+            <input type="text" id="question-input" placeholder="输入想对AA酱说的话（比如：你喜欢我吗？/计算1+2*3/我好累啊）...">
+            <button id="send-btn">发送</button>
+        </div>
+    </div>
+
+    <script>
+        // DOM元素
+        const chatBox = document.getElementById('chat-box');
+        const questionInput = document.getElementById('question-input');
+        const sendBtn = document.getElementById('send-btn');
+        const loading = document.getElementById('loading');
+        const characterImage = document.getElementById('character-image');
+        const characterLoading = document.getElementById('character-loading');
+        const imageResult = document.getElementById('image-result');
+        const genImage = document.getElementById('gen-image');
+        const codeCopyArea = document.getElementById('code-copy-area');
+        const codeContent = document.getElementById('code-content');
+        const copyBtn = document.getElementById('copy-btn');
+        const copyTip = document.getElementById('copy-tip');
+
+        // 缓存角色图片URL
+        const characterImageCache = {};
+
+        // 获取角色图片
+        async function fetchCharacterImage(animationType) {
+            // 如果缓存中有图片，直接使用
+            if (characterImageCache[animationType]) {
+                characterImage.src = characterImageCache[animationType];
+                characterImage.style.display = 'block';
+                characterLoading.style.display = 'none';
+                return;
+            }
+
+            try {
+                // 调用后端API获取角色图片
+                const res = await fetch(`http://localhost:5000/api/get-character-image?type=${animationType}`);
+                const data = await res.json();
+
+                if (data.image_url) {
+                    // 缓存图片URL
+                    characterImageCache[animationType] = data.image_url;
+                    // 显示图片
+                    characterImage.src = data.image_url;
+                    characterImage.style.display = 'block';
+                    characterLoading.style.display = 'none';
+                }
+            } catch (err) {
+                console.error('获取角色图片失败：', err);
+                characterLoading.textContent = '加载失败，请刷新页面';
+            }
+        }
+
+        // 发送消息
+        async function sendMessage() {
+            const question = questionInput.value.trim();
+            if (!question) return;
+
+            // 添加用户消息到聊天框
+            addMessage(question, 'user');
+            questionInput.value = '';
+
+            // 显示加载动画
+            loading.style.display = 'block';
+            // 隐藏生图结果
+            imageResult.style.display = 'none';
+            
+            try {
+                // 调用后端API
+                const res = await fetch('http://localhost:5000/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question }),
+                });
+                const data = await res.json();
+
+                // 更新角色图片（根据动画类型）
+                await fetchCharacterImage(data.animation);
+                
+                // 添加AI消息到聊天框
+                addMessage(data.answer, 'ai');
+            } catch (err) {
+                addMessage('出错了：' + err.message, 'ai');
+            } finally {
+                // 隐藏加载动画
+                loading.style.display = 'none';
+                // 滚动到底部
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
+
+        // 生成图片（低质量模式）
+        async function generateImage() {
+            const prompt = questionInput.value.trim();
+            if (!prompt) {
+                addMessage('哼！至少告诉我要画什么吧？', 'ai');
+                return;
+            }
+
+            // 显示加载动画
+            loading.style.display = 'block';
+            // 清空之前的生图结果
+            imageResult.style.display = 'none';
+            
+            try {
+                // 调用生图API（低质量参数）
+                const res = await fetch('http://localhost:5000/api/gen-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        prompt: prompt,
+                        quality: 'low' // 低质量模式，节约API
+                    }),
+                });
+                const data = await res.json();
+
+                // 更新角色图片为开心表情
+                await fetchCharacterImage('happy');
+                
+                // 显示生图结果
+                genImage.src = data.image_url;
+                imageResult.style.display = 'block';
+                codeCopyArea.style.display = 'block';
+                
+                // 生成可复制的图片代码
+                const imageCode = `<img src="${data.image_url}" alt="${prompt}" style="max-width: 300px; border-radius: 8px;">`;
+                codeContent.value = imageCode;
+                
+                // 添加AI消息
+                addMessage(`才...才不是特意为你画的呢😜 图片代码已经可以复制啦！`, 'ai');
+            } catch (err) {
+                addMessage('生成图片失败了：' + err.message, 'ai');
+            } finally {
+                loading.style.display = 'none';
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
+
+        // 复制代码
+        function copyCode() {
+            codeContent.select();
+            document.execCommand('copy');
+            // 显示复制提示
+            copyTip.style.display = 'inline';
+            setTimeout(() => {
+                copyTip.style.display = 'none';
+            }, 2000);
+        }
+
+        // 添加消息到聊天框
+        function addMessage(content, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            messageDiv.textContent = content;
+            chatBox.appendChild(messageDiv);
+        }
+
+        // 绑定事件
+        sendBtn.addEventListener('click', sendMessage);
+        copyBtn.addEventListener('click', copyCode);
+        questionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // 初始加载角色图片和欢迎语
+        window.onload = async () => {
+            addMessage('欢迎来到AA酱的聊天小屋～才...才不是特意等你的呢！', 'ai');
+            // 初始加载默认角色图片
+            await fetchCharacterImage('idle');
+        };
+    </script>
+</body>
+</html>
